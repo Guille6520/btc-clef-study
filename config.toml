@@ -1,0 +1,43 @@
+# Configuración principal del backtest de señales de Clef.
+# Los valores de [labeling] definen la "señal buena". Cambiarlos NO invalida las
+# llamadas a Clef ya guardadas si no tocan la pregunta (ver README, "Versionado").
+
+[data]
+symbols = ["BTC"]            # multimoneda desde el día 1; ETH/SOL se añaden aquí
+start = "2017-08-17"         # inicio del histórico de Binance spot BTC/USDT
+
+[data.ccxt]                  # símbolo interno -> (spot para velas, perp para funding)
+BTC = { spot = "BTC/USDT", perp = "BTC/USDT:USDT" }
+ETH = { spot = "ETH/USDT", perp = "ETH/USDT:USDT" }
+SOL = { spot = "SOL/USDT", perp = "SOL/USDT:USDT" }
+
+[labeling]
+horizon_hours = 24           # cierre por tiempo
+atr_period = 14
+main_sl_atr = 1.5            # CONFIGURACIÓN PRINCIPAL (fijada antes de ver resultados)
+main_tp_atr = 3.0
+grid_sl = [1.0, 1.5, 2.0]    # rejilla solo para análisis de sensibilidad
+grid_tp = [1.5, 2.0, 3.0]
+resolve_ambiguity = "main"   # "main" | "all": resolver con velas de 1m cuando TP y SL caen en la misma vela de 1h
+
+[costs]
+# Coste de ida y vuelta como fracción del nominal. Conservador: comisión taker en
+# ambos lados (~0,045%) + slippage (~0,01% por lado). VERIFICAR comisiones actuales
+# de Hyperliquid antes de sacar conclusiones.
+round_trip_cost_frac = 0.0011
+
+[clef]
+model = "clef-flash"         # "clef" (27B) o "clef-flash" (9B)
+question_set = "tpsl"        # "tpsl" = TP antes que SL | "dir" = ¿precio a 24h mayor que la entrada? (también por --qset)
+question_grid = "main"       # "main" = 2 preguntas (long/short principal) | "full" = 18 (rejilla completa)
+state_version = "v1"
+concurrency = 8
+timeout_s = 60
+
+[eval]
+# La tasa base de "TP antes que SL" con SL 1,5 / TP 3 / 24 h es ~25 %; el punto de equilibrio tras costes ronda el 37-40 %.
+thresholds = [0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.60]
+n_permutations = 200
+n_bootstrap = 2000
+bootstrap_block = 5
+min_train_years = 1
