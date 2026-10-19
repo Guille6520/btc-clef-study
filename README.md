@@ -1,5 +1,9 @@
 # Estudio del precio de BTC con Clef
 
+[![tests](https://github.com/Guille6520/btc-clef-study/actions/workflows/tests.yml/badge.svg)](https://github.com/Guille6520/btc-clef-study/actions/workflows/tests.yml)
+![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 ¿Puede un modelo de decisión como **Clef** (Cloudflare Workers AI) filtrar buenas operaciones en BTC?
 Este repositorio es un banco de pruebas para responderlo con datos y sin autoengaño: se le pregunta a Clef,
 vela a vela, cómo acabaría una operación hipotética, se **guarda cada respuesta** y se compara con lo que pasó de verdad.
@@ -104,10 +108,31 @@ Copy-Item .env.example .env        # rellena CLOUDFLARE_ACCOUNT_ID y CLOUDFLARE_
 Notas de coste (medidas): Clef-flash gasta ~2,55 neuronas por llamada de 2 preguntas (~740 tokens). El plan gratuito de Workers AI da 10.000
 neuronas al día y la cuota es **por cuenta**; si se agota, `run` se detiene limpio y es reanudable.
 
+## Tests
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pytest -v
+```
+
+32 tests, **offline** (velas sintéticas, DuckDB en memoria y respuestas simuladas de Clef: sin red, claves ni datos descargados), y se ejecutan
+en GitHub Actions en cada push y pull request. Se centran en lo que, si falla, da resultados falsos sin avisar:
+
+- **Etiquetado:** TP/SL/tiempo, entrada en la apertura siguiente, gaps, empates en la misma vela (resueltos con 1m o dejados como `ambiguous`,
+  nunca adivinados), TP que debe *atravesarse* y stop que cuenta al alcanzarse, y funding solo durante la operación.
+- **Sin fuga temporal:** las features hasta la vela *t* no cambian si se alteran las velas posteriores; el estado no lleva fechas ni precios absolutos.
+- **Evaluación:** AUC, Brier, LogLoss y la simulación con una sola posición a la vez.
+- **Cliente de Clef:** versiones de caché estables, parseo de la respuesta real, la cuota agotada (4006) detiene sin reintentar y el token nunca aparece en un error.
+
+Los tests se validaron con *mutaciones*: se introdujeron a propósito 14 errores en una copia del código (ignorar el gap, contar el TP al rozarlo,
+mirar el futuro en una feature, filtrar el token…) y **la suite detectó los 14**.
+
 ## Estructura
 
 ```
 config.toml          parámetros (SL/TP/plazo fijados, costes, umbrales, modelo)
+tests/               suite offline (pytest)
+.github/workflows/   CI: tests en cada push y pull request
 clefbt/
   data.py            velas 1h/1m (Binance vía ccxt) y funding
   features.py        features y estado anonimizado para Clef

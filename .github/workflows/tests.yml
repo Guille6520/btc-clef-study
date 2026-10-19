@@ -1,0 +1,27 @@
+name: tests
+
+# La suite es deliberadamente offline: velas sintéticas, DuckDB en memoria y respuestas simuladas de Clef.
+# No necesita red, claves ni datos descargados, por eso puede correr en CI.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements*.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements-dev.txt
+
+      - name: Ejecutar tests
+        run: pytest -v
