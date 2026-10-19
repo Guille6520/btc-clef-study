@@ -4,7 +4,7 @@
 Este repositorio es un banco de pruebas para responderlo con datos y sin autoengaño: se le pregunta a Clef,
 vela a vela, cómo acabaría una operación hipotética, se **guarda cada respuesta** y se compara con lo que pasó de verdad.
 
-> **Estado:** investigación en curso. El primer resultado es **negativo** (ver más abajo). Publicar los resultados
+> **Estado:** investigación en curso. Los dos primeros resultados son **negativos** (ver más abajo). Publicar los resultados
 > malos con la misma honestidad que los buenos es parte del objetivo.
 >
 > **Aviso:** esto no es consejo financiero ni un sistema de trading. Un backtest, aunque salga bien, no garantiza nada.
@@ -51,14 +51,35 @@ La configuración principal está fijada **antes** de ver resultados. La rejilla
 
 Informe completo: [docs/resultados-tpsl.md](docs/resultados-tpsl.md).
 
-### Prueba 2: `dir` (¿sube a 24 h?)
+### Prueba 2: `dir` con Clef-flash (¿sube a 24 h?; muestra aleatoria de 3.977 velas)
 
-*Pendiente.* Sirve para separar "Clef no sabe de BTC" de "la pregunta TP/SL es demasiado difícil".
+Sirve para separar "Clef no sabe de BTC" de "la pregunta TP/SL es demasiado difícil". Tampoco aquí hay señal:
+
+| | Resultado |
+|---|---|
+| Tasa base (el precio sube a 24 h) | 52,1 % |
+| P media de Clef | 43,8 % |
+| **AUC de Clef** | **0,466** |
+| Correlación de rangos con el retorno a 24 h | -0,015 (ruido: ±0,031) |
+| AUC regresión logística (walk-forward) | 0,514 |
+| Brier de Clef / de la tasa base | 0,341 / 0,250 |
+| Operar el signo de Clef | 47,3 % de aciertos, **-0,08 ATR netos** por operación (IC90 [-0,18, +0,03]) |
+
+- Clef-flash no predice la dirección y está peor calibrado que una moneda (LogLoss 0,94 frente a 0,69).
+- Los extremos apuntan algo hacia el lado equivocado (cuando dice <30 % el precio subió el 55 %; cuando dice >70 %, el 47 %), pero la correlación
+  con el retorno es nula y las ventanas de 24 h se solapan. **No es una señal utilizable**: invertir el signo no sería rentable (la media bruta
+  pasaría de +0,10 a -0,10 ATR) y elegir el sentido a posteriori sería precisamente el sesgo que este estudio quiere evitar.
+- Hasta con un modelo clásico, la dirección a 24 h es casi impredecible con estas features (AUC 0,514).
+
+Informe completo: [docs/resultados-dir.md](docs/resultados-dir.md).
+
+**Conclusión provisional:** con Clef-flash, zero-shot, con este estado y estas preguntas, no hay nada que explotar, ni para filtrar TP/SL ni
+para predecir la dirección. Por eso no se ha lanzado la pasada completa de ~79.000 velas.
 
 ## Limitaciones conocidas
 
 - Solo **Clef-flash**, **zero-shot**, con **un** formato de estado y **una** formulación de pregunta. No se puede concluir sobre Clef (27B) ni sobre otras formulaciones.
-- Muestra de ~2.000 velas, no el histórico completo (~79.000). La pasada completa cuesta ~2 $ pero no se justifica sin señal en la muestra.
+- Muestras aleatorias de ~2.000 (`tpsl`) y ~4.000 (`dir`) velas, no el histórico completo (~79.000). La pasada completa cuesta ~2 $ pero no se justifica sin señal en la muestra.
 - Sin open interest histórico, opciones ni liquidaciones.
 - Entrada simulada a mercado con coste conservador, sin modelar el fill de órdenes límite.
 - Posible fuga por memorización del histórico (ver metodología).
@@ -98,7 +119,6 @@ docs/                resultados
 
 ## Próximos pasos
 
-- Resultado de la prueba direccional.
 - Clef 27B sobre la misma muestra; otras formulaciones del estado y de la pregunta.
 - Clef como *feature* junto al modelo clásico (¿aporta algo que las features numéricas no tienen?).
 - Registro en vivo cada hora (`clefbt live`), la única validación sin fuga.
