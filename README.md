@@ -86,6 +86,8 @@ Informe completo: [docs/resultados-dir.md](docs/resultados-dir.md).
 Walk-forward por años con embargo de 25 h, hiperparámetros fijos y **reserva ciega del último año sin tocar**. En resumen (detalle en
 [docs/resultados-ml-clasico.md](docs/resultados-ml-clasico.md)):
 
+![Qué distingue cada modelo (AUC frente al azar) y qué resultado medio da por operación tras comisiones](docs/img/resultados-1.png)
+
 | | Clef-flash | Mejor ML clásico |
 |---|---|---|
 | AUC TP antes que SL (largo / corto) | 0,514 / 0,501 | **0,578 / 0,573**, positivo en todos los años |
@@ -98,6 +100,9 @@ Walk-forward por años con embargo de 25 h, hiperparámetros fijos y **reserva c
 - **A baja frecuencia** los costes casi desaparecen, pero ninguna regla estándar bate a comprar y mantener (Sharpe 0,64, caída -79 %). Tendencia SMA200
   más volatilidad objetivo da Sharpe 0,74 con **caída -48 %**: gestión de riesgo, no *alpha*.
 - **Carry de funding:** de +4 % a +31 % anual según el año; en 2025 ≈ +5 %, comparable al bono a 10 años.
+
+![Estrategias diarias: retorno anual y caída máxima](docs/img/resultados-2.png)
+
 - **Una pista que no resiste:** la *continuación* tras extremos de RSI parecía robusta (replicada en un periodo y en activos no vistos), pero la media la sacan
   pocas operaciones, la peor es -16 % del precio sin stop y con 0,1 % extra de deslizamiento se queda en +5 %/año (BTC), frente a +22 % de comprar y mantener.
 
@@ -181,7 +186,7 @@ clefbt/
   derivs.py          open interest, prima, volumen agresor, DVOL, miedo y avaricia, macro (fuentes gratuitas)
   daily.py           estrategias diarias y carry de funding
   rules.py           reglas de RSI (contraria y continuación) y su robustez
-docs/                resultados
+docs/                resultados, gráficos (img/) y make_charts.py que los genera (requiere matplotlib)
 ```
 
 ## Próximos pasos
