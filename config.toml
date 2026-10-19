@@ -34,6 +34,18 @@ state_version = "v1"
 concurrency = 8
 timeout_s = 60
 
+[bench]
+# Benchmark de ML clásico (walk-forward purgado por años). Las decisiones de diseño se fijan antes de ver resultados.
+holdout_start = "2025-10-14"   # RESERVA CIEGA: el último año no se usa ni para entrenar ni para evaluar hasta `bench --final`
+first_test_year = 2021
+first_test_year_derivs = 2023  # con derivados (OI, DVOL desde 2021) hay que dejar >= 2 años de entrenamiento
+embargo_hours = 25             # horizonte + 1 h: ninguna etiqueta del entrenamiento solapa con el periodo de test
+n_bootstrap = 300
+block_hours = 168              # bootstrap por bloques de una semana
+n_permutations = 100
+thresholds_tp = [0.30, 0.35, 0.40, 0.45, 0.50]
+margins_dir = [0.0, 0.02, 0.05, 0.10]
+
 [eval]
 # La tasa base de "TP antes que SL" con SL 1,5 / TP 3 / 24 h es ~25 %; el punto de equilibrio tras costes ronda el 37-40 %.
 thresholds = [0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.60]

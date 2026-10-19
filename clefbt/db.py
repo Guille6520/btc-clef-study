@@ -27,6 +27,19 @@ CREATE TABLE IF NOT EXISTS labels (
     y_pess INTEGER, y_opt INTEGER,
     PRIMARY KEY (symbol, ts, direction, sl_atr, tp_atr, horizon_h)
 );
+-- Datos de derivados y contexto (fuentes públicas gratuitas). ts = apertura de la vela de 1 h, como en candles_1h;
+-- cada valor es el último conocido ANTES del cierre de esa vela (sin mirar el futuro).
+CREATE TABLE IF NOT EXISTS perp_1h (
+    symbol VARCHAR, ts TIMESTAMP, taker_buy_ratio DOUBLE, trades DOUBLE, premium DOUBLE,
+    PRIMARY KEY (symbol, ts)
+);
+CREATE TABLE IF NOT EXISTS oi_1h (
+    symbol VARCHAR, ts TIMESTAMP, oi DOUBLE, oi_value DOUBLE, ls_top_acc DOUBLE, ls_top_pos DOUBLE,
+    ls_all DOUBLE, taker_ls_vol DOUBLE,
+    PRIMARY KEY (symbol, ts)
+);
+CREATE TABLE IF NOT EXISTS dvol_1h (ts TIMESTAMP PRIMARY KEY, dvol DOUBLE);
+CREATE TABLE IF NOT EXISTS daily_ext (name VARCHAR, date DATE, value DOUBLE, PRIMARY KEY (name, date));
 -- Cada respuesta de Clef, con la versión de estado y de preguntas para poder reutilizarla.
 CREATE TABLE IF NOT EXISTS clef_calls (
     symbol VARCHAR, ts TIMESTAMP, model VARCHAR, state_version VARCHAR, qset_version VARCHAR,
