@@ -31,7 +31,7 @@ La configuración principal está fijada **antes** de ver resultados. La rejilla
   toque primero. Lo que ni el 1 m decide queda `ambiguous` y se evalúa en el caso pesimista y en el optimista.
 - **Realismo de ejecución.** Gaps (fill a la apertura si ya superó el stop), TP como orden límite que debe *atravesarse*, comisiones, slippage
   y **funding real** de la ida a la salida.
-- **Estado anonimizado para el modelo.** Sin fechas ni nombre de moneda, precios en unidades de ATR. Reduce, **no elimina**, el riesgo de que el
+- **Estado anonimizado para el modelo.** Sin fechas ni precios absolutos (todo va en unidades de ATR), **pero el estado sí indica que es BTC**. Reduce, **no elimina**, el riesgo de que el
   modelo recuerde el histórico (Clef se basa en Qwen, que ha visto años de BTC). La única validación sin fuga posible es el registro en vivo.
 - **Evaluación honesta.** Calibración, AUC, comparación con la tasa base y con una **regresión logística walk-forward**, simulación con una
   posición a la vez, IC por bootstrap de bloques y test de permutación.
@@ -144,6 +144,7 @@ docs/                resultados
 
 ## Próximos pasos
 
+- Variante del estado sin mencionar el activo (`state_version` v2), para medir cuánto del resultado depende de saber que es BTC.
 - Clef 27B sobre la misma muestra; otras formulaciones del estado y de la pregunta.
 - Clef como *feature* junto al modelo clásico (¿aporta algo que las features numéricas no tienen?).
 - Registro en vivo cada hora (`clefbt live`), la única validación sin fuga.
