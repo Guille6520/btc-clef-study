@@ -44,4 +44,16 @@ Muestra aleatoria de 3.977 velas de 1 h de BTC (2019-09 a 2026-10). Coste ida y 
 - Operar el signo, tras costes, da una media de -0,04 a -0,08 ATR por operación con intervalos que incluyen el cero: no hay evidencia de edge.
 - Un modelo clásico (regresión logística walk-forward con las mismas features) llega apenas a AUC 0,514: la dirección a 24 h en BTC es
   casi impredecible con estas variables.
-- Es un resultado para Clef-flash, zero-shot, con un estado y una pregunta concretos. No concluye sobre Clef 27B ni sobre otras formulaciones.
+- Es un resultado para Clef-flash, zero-shot, con un estado y una pregunta concretos (para el modelo 27B, ver la sección siguiente). No concluye sobre otras formulaciones ni sobre fine-tuning.
+
+## Clef 27B (596 velas aleatorias)
+
+Mismo estado y misma pregunta, con el modelo grande (`@cf/cloudflare/clef`):
+
+- Tasa base (sube): 0,503. P media de Clef: 0,427.
+- Brier 0,3594 (constante: 0,2500), LogLoss 1,0164, **AUC 0,4578**.
+- Correlación de rangos con el retorno a 24 h: **+0,014** (±0,080 si fuera azar).
+- Sobreconfianza extrema: cuando dice 70-100 % (153 casos, P media 0,81) el precio subió el 45 %; cuando dice <30 % (251 casos), el 55 %.
+- Operar su signo: media neta de +0,07 ATR con un IC90 de [-0,21, +0,36]: no distinguible de cero con esta muestra.
+
+El modelo grande da el mismo resultado que el pequeño: no hay señal direccional utilizable.

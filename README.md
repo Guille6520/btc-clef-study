@@ -7,9 +7,11 @@
 ¿Puede un modelo de decisión como **Clef** (Cloudflare Workers AI) filtrar buenas operaciones en BTC?
 Este repositorio es un banco de pruebas para responderlo con datos y sin autoengaño: se le pregunta a Clef,
 vela a vela, cómo acabaría una operación hipotética, se **guarda cada respuesta** y se compara con lo que pasó de verdad.
+Después se contrasta con **ML clásico**, datos de derivados, estrategias diarias y el *carry* de funding, con el mismo protocolo y la misma contabilidad de costes.
 
-> **Estado:** investigación en curso. Los dos primeros resultados son **negativos** (ver más abajo). Publicar los resultados
-> malos con la misma honestidad que los buenos es parte del objetivo.
+> **Estado:** investigación en curso, **sin ninguna estrategia rentable por ahora**. Clef (flash y 27B) no tiene señal; un ML clásico simple
+> sí la tiene, pero pequeña y no explotable tras costes; y ninguna estrategia diaria bate a comprar y mantener (solo reducen la caída).
+> Publicar los resultados malos con la misma honestidad que los buenos es parte del objetivo.
 >
 > **Aviso:** esto no es consejo financiero ni un sistema de trading. Un backtest, aunque salga bien, no garantiza nada.
 
@@ -74,19 +76,43 @@ Sirve para separar "Clef no sabe de BTC" de "la pregunta TP/SL es demasiado dif�
   con el retorno es nula y las ventanas de 24 h se solapan. **No es una señal utilizable**: invertir el signo no sería rentable (la media bruta
   pasaría de +0,10 a -0,10 ATR) y elegir el sentido a posteriori sería precisamente el sesgo que este estudio quiere evitar.
 - Hasta con un modelo clásico, la dirección a 24 h es casi impredecible con estas features (AUC 0,514).
+- **Clef 27B** sobre 596 velas da lo mismo: AUC 0,458, correlación con el retorno +0,014 (ruido: ±0,080) y sobreconfianza extrema (cuando dice >70 %, sube el 45 %).
+  El modelo grande no cambia el resultado.
 
 Informe completo: [docs/resultados-dir.md](docs/resultados-dir.md).
 
-**Conclusión provisional:** con Clef-flash, zero-shot, con este estado y estas preguntas, no hay nada que explotar, ni para filtrar TP/SL ni
-para predecir la dirección. Por eso no se ha lanzado la pasada completa de ~79.000 velas.
+### Prueba 3: ML clásico, derivados y estrategias de baja frecuencia
+
+Walk-forward por años con embargo de 25 h, hiperparámetros fijos y **reserva ciega del último año sin tocar**. En resumen (detalle en
+[docs/resultados-ml-clasico.md](docs/resultados-ml-clasico.md)):
+
+| | Clef-flash | Mejor ML clásico |
+|---|---|---|
+| AUC TP antes que SL (largo / corto) | 0,514 / 0,501 | **0,578 / 0,573**, positivo en todos los años |
+| AUC dirección a 24 h | 0,466 | 0,522 (la heurística de reversión por RSI, 0,532) |
+| Volatilidad futura (Spearman) | no probado | **0,46** (R² fuera de muestra 0,22) |
+
+- **La volatilidad es predecible; la dirección, casi no.** Un AUC de 0,58 en TP/SL mejora el ranking, pero con 1:2 y costes del 0,11 % **todas** las
+  simulaciones siguen perdiendo (-0,02 a -0,18 R por operación; siempre largo: -0,12 R).
+- **Los datos de derivados no aportan** (open interest, prima, volumen agresor, DVOL, macro): con este protocolo empeoran el modelo.
+- **A baja frecuencia** los costes casi desaparecen, pero ninguna regla estándar bate a comprar y mantener (Sharpe 0,64, caída -79 %). Tendencia SMA200
+  más volatilidad objetivo da Sharpe 0,74 con **caída -48 %**: gestión de riesgo, no *alpha*.
+- **Carry de funding:** de +4 % a +31 % anual según el año; en 2025 ≈ +5 %, comparable al bono a 10 años.
+- **Una pista que no resiste:** la *continuación* tras extremos de RSI parecía robusta (replicada en un periodo y en activos no vistos), pero la media la sacan
+  pocas operaciones, la peor es -16 % del precio sin stop y con 0,1 % extra de deslizamiento se queda en +5 %/año (BTC), frente a +22 % de comprar y mantener.
+
+**Conclusión provisional:** ni Clef ni un ML clásico con datos públicos dan una estrategia direccional rentable tras costes. Lo realista es
+gestión de riesgo (tendencia y volatilidad objetivo, dimensionado con la volatilidad predicha). Por eso no se lanzó la pasada completa de ~79.000 velas con Clef.
 
 ## Limitaciones conocidas
 
-- Solo **Clef-flash**, **zero-shot**, con **un** formato de estado y **una** formulación de pregunta. No se puede concluir sobre Clef (27B) ni sobre otras formulaciones.
-- Muestras aleatorias de ~2.000 (`tpsl`) y ~4.000 (`dir`) velas, no el histórico completo (~79.000). La pasada completa cuesta ~2 $ pero no se justifica sin señal en la muestra.
-- Sin open interest histórico, opciones ni liquidaciones.
-- Entrada simulada a mercado con coste conservador, sin modelar el fill de órdenes límite.
-- Posible fuga por memorización del histórico (ver metodología).
+- Clef solo se probó **zero-shot**, con **un** formato de estado y **una** formulación de pregunta (flash en ~2.000 y ~4.000 velas, 27B en ~600). No se puede
+  concluir sobre fine-tuning ni sobre otras formulaciones.
+- El benchmark clásico usa **hiperparámetros fijos**: un ajuste fino podría mejorar el AUC, pero también el riesgo de sobreajuste.
+- Sin liquidaciones ni opciones (solo DVOL). Casi todo es BTC; ETH y SOL solo se usaron para replicar la pista del RSI.
+- Entrada simulada a mercado con coste conservador, sin modelar el fill de órdenes límite ni la selección adversa; los escenarios de comisión baja son optimistas.
+- Se han probado muchas variantes; ninguna celda concreta debe tomarse como hallazgo. Los datos de 2017-2021 son un mercado alcista excepcional.
+- Posible fuga por memorización del histórico en Clef (ver metodología). La **reserva ciega** (desde 2025-10-14) sigue sin usar y debe evaluarse **una sola vez**.
 
 ## Reproducirlo (Windows / PowerShell)
 
@@ -103,7 +129,16 @@ Copy-Item .env.example .env        # rellena CLOUDFLARE_ACCOUNT_ID y CLOUDFLARE_
 # pregunta direccional
 .\.venv\Scripts\python.exe -m clefbt run --qset dir --sample 2000
 .\.venv\Scripts\python.exe -m clefbt evaluate --qset dir
+# ML clásico y estrategias (no necesitan Cloudflare)
+.\.venv\Scripts\python.exe -m clefbt bench                  # walk-forward purgado: direccion, TP/SL, volatilidad
+.\.venv\Scripts\python.exe -m clefbt download-derivs        # open interest, prima, volumen agresor, DVOL, macro
+.\.venv\Scripts\python.exe -m clefbt bench --derivs         # el mismo benchmark con derivados, sobre el periodo comun
+.\.venv\Scripts\python.exe -m clefbt daily                  # estrategias diarias y carry de funding
+.\.venv\Scripts\python.exe -m clefbt extremes               # continuacion en extremos de RSI (BTC, ETH, SOL)
+# la reserva ciega se evalua UNA sola vez, con la estrategia ya decidida:  bench --final / daily --final / extremes --final
 ```
+
+En consola de Windows, si un informe falla al imprimir caracteres especiales, ejecuta antes `$env:PYTHONIOENCODING = "utf-8"`.
 
 Notas de coste (medidas): Clef-flash gasta ~2,55 neuronas por llamada de 2 preguntas (~740 tokens). El plan gratuito de Workers AI da 10.000
 neuronas al día y la cuota es **por cuenta**; si se agota, `run` se detiene limpio y es reanudable.
@@ -115,7 +150,7 @@ neuronas al día y la cuota es **por cuenta**; si se agota, `run` se detiene lim
 .\.venv\Scripts\python.exe -m pytest -v
 ```
 
-32 tests, **offline** (velas sintéticas, DuckDB en memoria y respuestas simuladas de Clef: sin red, claves ni datos descargados), y se ejecutan
+47 tests, **offline** (velas sintéticas, DuckDB en memoria y respuestas simuladas de Clef: sin red, claves ni datos descargados), y se ejecutan
 en GitHub Actions en cada push y pull request. Se centran en lo que, si falla, da resultados falsos sin avisar:
 
 - **Etiquetado:** TP/SL/tiempo, entrada en la apertura siguiente, gaps, empates en la misma vela (resueltos con 1m o dejados como `ambiguous`,
@@ -123,9 +158,12 @@ en GitHub Actions en cada push y pull request. Se centran en lo que, si falla, d
 - **Sin fuga temporal:** las features hasta la vela *t* no cambian si se alteran las velas posteriores; el estado no lleva fechas ni precios absolutos.
 - **Evaluación:** AUC, Brier, LogLoss y la simulación con una sola posición a la vez.
 - **Cliente de Clef:** versiones de caché estables, parseo de la respuesta real, la cuota agotada (4006) detiene sin reintentar y el token nunca aparece en un error.
+- **Benchmark clásico:** el embargo se respeta, la reserva ciega nunca entra en el entrenamiento, los datos de derivados y los diarios se alinean sin mirar el futuro
+  (la instantánea de las 12:05 pertenece a la vela de las 12:00; el dato diario del día D llega con un día de retraso) y las estrategias diarias cobran la posición el día siguiente.
+- **Regla de extremos de RSI:** una posición a la vez y retorno futuro desde la apertura siguiente.
 
-Los tests se validaron con *mutaciones*: se introdujeron a propósito 14 errores en una copia del código (ignorar el gap, contar el TP al rozarlo,
-mirar el futuro en una feature, filtrar el token…) y **la suite detectó los 14**.
+Los tests se validaron con *mutaciones*: se introdujeron a propósito 23 errores en copias del código (ignorar el gap, contar el TP al rozarlo,
+mirar el futuro en una feature, quitar el embargo, entrenar con la reserva ciega, filtrar el token…) y **la suite detectó los 23**.
 
 ## Estructura
 
@@ -139,15 +177,20 @@ clefbt/
   labeling.py        etiquetado triple barrera sin sesgo de empate
   clef.py            cliente Workers AI con caché y control de cuota
   evaluate.py        calibración, baselines, simulación, permutación
+  classic.py         benchmark de ML clásico con walk-forward purgado (dirección, TP/SL, volatilidad)
+  derivs.py          open interest, prima, volumen agresor, DVOL, miedo y avaricia, macro (fuentes gratuitas)
+  daily.py           estrategias diarias y carry de funding
+  rules.py           reglas de RSI (contraria y continuación) y su robustez
 docs/                resultados
 ```
 
 ## Próximos pasos
 
-- Variante del estado sin mencionar el activo (`state_version` v2), para medir cuánto del resultado depende de saber que es BTC.
-- Clef 27B sobre la misma muestra; otras formulaciones del estado y de la pregunta.
-- Clef como *feature* junto al modelo clásico (¿aporta algo que las features numéricas no tienen?).
+- Gestión de riesgo con la volatilidad predicha: dimensionar posiciones y colocar stops según la volatilidad esperada, y medir la mejora en Sharpe y caída.
+- Simular el fill de órdenes límite (selección adversa) para saber si las comisiones *maker* son alcanzables.
+- Variante del estado de Clef sin mencionar el activo (`state_version` v2) y Clef como *feature* junto al modelo clásico.
 - Registro en vivo cada hora (`clefbt live`), la única validación sin fuga.
+- Evaluar la reserva ciega **una sola vez**, cuando haya una estrategia decidida.
 
 ## Licencia
 
