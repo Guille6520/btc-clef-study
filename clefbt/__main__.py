@@ -1,12 +1,12 @@
 import argparse
 
-from . import classic, clef, config, daily, data, derivs, evaluate, labeling, rules
+from . import classic, clef, compare, config, daily, data, derivs, evaluate, labeling, rules
 from .db import connect
 
 
 def main():
     ap = argparse.ArgumentParser(prog="clefbt", description="Backtest de señales de Clef sobre BTC")
-    ap.add_argument("cmd", choices=["init", "download", "label", "probe", "run", "live", "evaluate", "stats", "bench", "download-derivs", "daily", "contrarian", "extremes"])
+    ap.add_argument("cmd", choices=["init", "download", "label", "probe", "run", "live", "evaluate", "stats", "bench", "download-derivs", "daily", "contrarian", "extremes", "compare"])
     ap.add_argument("--final", action="store_true", help="bench: evalúa la RESERVA CIEGA (hacerlo una sola vez, al final)")
     ap.add_argument("--derivs", action="store_true", help="bench: añade derivados y contexto (perp, OI, DVOL, macro)")
     ap.add_argument("--symbol", help="por defecto, todos los de config.toml")
@@ -60,6 +60,9 @@ def main():
     elif a.cmd == "bench":
         for s in symbols:
             classic.run_bench_to_file(con, cfg, s, final=a.final, derivs=a.derivs)
+    elif a.cmd == "compare":
+        for s in symbols:
+            compare.run_compare_to_file(con, cfg, s, model=a.model)
     elif a.cmd == "stats":
         for t in ("candles_1h", "candles_1m", "funding", "labels", "clef_calls"):
             print(f"{t:12s}", con.execute(f"SELECT count(*) FROM {t}").fetchone()[0])
